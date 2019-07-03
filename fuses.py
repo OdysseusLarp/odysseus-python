@@ -53,7 +53,7 @@ def logic(state, backend_change):
     if backend_change:
         init_pins(state["config"])
         if state.get("blow", None):
-            blow_fuses(state["blow"], state["config"])
+            state["failed"] = blow_fuses(state["blow"], state["config"])
             state.pop("blow", None)
     
     state["fuses"] = read_fuses(state["config"]["measure"])
@@ -94,6 +94,18 @@ def blow_fuses(indexes, config):
             pi.write(pin, 0)
             time.sleep(SAFETY_DELAY)
     init_pins(config)
+    # Check if some have failed to blow
+    time.sleep(SAFETY_DELAY)
+    fuses = read_fuses(config["measure"])
+    failed = []
+    for i in indexes:
+        if fuses[i] > 0:
+            failed.append(i)
+    if len(failed) > 0:
+        return failed
+    else:
+        return None
+
 
 
 
