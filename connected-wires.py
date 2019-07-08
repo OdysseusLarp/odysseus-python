@@ -28,6 +28,9 @@ def logic(state, backend_change):
         init_pins(state["config"]["pins"])
     
     state["connected"] = read_pins(state["config"]["pins"])
+    if state.get("expected", None):
+        if state["connected"] == state["expected"]:
+            state["status"] = "fixed"
     return state
 
 
