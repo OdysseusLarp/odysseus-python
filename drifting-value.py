@@ -84,9 +84,9 @@ def logic(state, backend_change):
             state["drift"] = -state["drift"]
 
     # Limits
-    if state["value"] < config.get("safeRangeMin", 0)/2
+    if state["value"] < config.get("safeRangeMin", 0)/2:
         state["value"] = config.get("safeRangeMin", 0)/2
-    if state["value"] > config.get("safeRangeMax", 1000)*2
+    if state["value"] > config.get("safeRangeMax", 1000)*2:
         state["value"] = config.get("safeRangeMax", 1000)*2
 
     # Print value
