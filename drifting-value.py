@@ -38,6 +38,8 @@ default_state = {
     "minDriftPerMinute": 2, # minimum drift per MINUTE when randomizing drift
     "maxDriftPerMinute": 4, # maximum drift per MINUTE when randomizing drift
     "config": {
+        "safeRangeMin": 330,         # minimum safe value (backend uses)
+        "safeRangeMax": 740,         # maximum safe value (backend uses)
         "maxRndMagnitude": 30,       # maximum white noise value when updating value
         "rndMagnitudeDecay": 0.95,   # how fast random magnitude decays (stabilation time: 0.95 ~5s, 0.97 ~10s)
         "brownNoiseSpeed": 0.1,      # magnitude how fast brown noise changes
@@ -81,6 +83,11 @@ def logic(state, backend_change):
         if random.random() < config["probDriftDown"]:
             state["drift"] = -state["drift"]
 
+    # Limits
+    if state["value"] < config.get("safeRangeMin", 0)/2
+        state["value"] = config.get("safeRangeMin", 0)/2
+    if state["value"] > config.get("safeRangeMax", 1000)*2
+        state["value"] = config.get("safeRangeMax", 1000)*2
 
     # Print value
     sine = math.sin(state["sinePosition"]) * config["sineMagnitude"]
