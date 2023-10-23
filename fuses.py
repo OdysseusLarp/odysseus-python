@@ -1,4 +1,3 @@
-
 from odysseus import log
 from odysseus.taskbox import TaskBoxRunner
 import pigpio
@@ -26,27 +25,22 @@ import random
 
 pi = pigpio.pi()
 
-BLOW_TIME=0.25
-SAFETY_DELAY=0.05
-CALLS_PER_SECOND=2
+BLOW_TIME = 0.25
+SAFETY_DELAY = 0.05
+CALLS_PER_SECOND = 2
 
 default_state = {
     "fuses": [],
     "status": "initial",
     "config": {
-        "blowing": [ 4, 15, 18, 22, 24,  9, 11, 7,  6, 13, 16, 20],
-        "measure": [14, 17, 27, 23, 10, 25,  8, 5, 12, 19, 26, 21],
+        "blowing": [4, 15, 18, 22, 24, 9, 11, 7, 6, 13, 16, 20],
+        "measure": [14, 17, 27, 23, 10, 25, 8, 5, 12, 19, 26, 21],
     },
     "presets": {
-        "blow_one": {
-            "blow": [0]
-        },
-        "blow_all": {
-            "blow": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
-        },
-    }
+        "blow_one": {"blow": [0]},
+        "blow_all": {"blow": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]},
+    },
 }
-
 
 
 def logic(state, backend_change):
@@ -55,7 +49,7 @@ def logic(state, backend_change):
         if state.get("blow", None):
             state["failed"] = blow_fuses(state["blow"], state["config"])
             state.pop("blow", None)
-    
+
     state["fuses"] = read_fuses(state["config"]["measure"])
     state["status"] = "broken" if (0 in state["fuses"]) else "fixed"
     return state
@@ -105,8 +99,6 @@ def blow_fuses(indexes, config):
         return failed
     else:
         return None
-
-
 
 
 options = {

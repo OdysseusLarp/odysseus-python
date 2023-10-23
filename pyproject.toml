@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "odysseus-python"
+version = "0.1.0"
+description = "Odysseus Python task boxes"
+authors = ["Odysseus <odysseuslarp@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "odysseus"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-socketio = "^4.1.0"
+requests = "^2.12.4"
+pigpio = "1.38"
+
+[tool.black]
+line-length = 120
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
