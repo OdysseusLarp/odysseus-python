@@ -6,6 +6,7 @@ from pathlib import Path
 import requests
 import threading
 import socketio
+import base64
 
 
 # Implementation notes:
@@ -39,7 +40,7 @@ class TaskBox:
         self.id = id
         self.url = url
         self._setup_connection(proxy, user, passwd)
-        self._setup_socketio()
+        self._setup_socketio(user, passwd)
         if _verbose:
             print("Session to server established: " + self.url)
 
@@ -59,11 +60,21 @@ class TaskBox:
 
         self.session.headers["Content-Type"] = "application/json"
 
-    def _setup_socketio(self):
+    def _setup_socketio(self, user, passwd):
+        headers = {}
+        if user:
+            auth_string = user + ":" + passwd
+            auth_encoded = base64.b64encode(auth_string.encode()).decode()
+            headers = {"Authorization": "Basic " + auth_encoded}
+
         self.backend_event = threading.Event()
         self.received_state = None
         self.sio = socketio.Client()
-        self.sio.connect(self.url + "?data=/data/box/" + self.id, namespaces=["/data"])
+        self.sio.connect(
+            self.url + "?data=/data/box/" + self.id,
+            namespaces=["/data"],
+            headers=headers if headers else None,
+        )
 
         @self.sio.on("dataUpdate", namespace="/data")
         def on_message(type, id, data):
