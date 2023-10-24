@@ -4,19 +4,23 @@ import sys
 import select
 import time
 
+
 def pollLine():
     """Return an typed line (after pressing enter) without blocking.
     Returns None if enter has not been pressed."""
-    i,o,e = select.select([sys.stdin],[],[],0.0001)
+    i, o, e = select.select([sys.stdin], [], [], 0.0001)
     for s in i:
         if s == sys.stdin:
             input = sys.stdin.readline()
             return input
     return None
 
+
 _prevChar = ""
 _prevReturn = None
 _prevTime = 0
+
+
 def pollChar(sticky):
     """Returns the last char typed before pressing enter each time
     enter has been pressed. Returns None if enter has not been pressed.
@@ -40,7 +44,7 @@ def pollChar(sticky):
     return None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     count = 0
     while True:
         line = pollChar(False)

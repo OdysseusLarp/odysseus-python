@@ -24,8 +24,10 @@ import socketio
 
 _verbose = False
 
+
 class ConcurrentModificationException(Exception):
     pass
+
 
 class NetworkException(Exception):
     pass
@@ -43,34 +45,32 @@ class TaskBox:
 
     def _setup_connection(self, proxy, user, passwd):
         self.session = requests.Session()
-        
+
         if proxy:
-            self.session.proxies = {'http':proxy,'https':proxy}
-            self.session.verify = False 
+            self.session.proxies = {"http": proxy, "https": proxy}
+            self.session.verify = False
             if _verbose:
-                print ("Using proxy: " + proxy)
+                print("Using proxy: " + proxy)
 
         if user:
             self.session.auth = (user, passwd)
             if _verbose:
                 print("Using basic http auth")
 
-        self.session.headers['Content-Type']  = "application/json"
-
+        self.session.headers["Content-Type"] = "application/json"
 
     def _setup_socketio(self):
         self.backend_event = threading.Event()
         self.received_state = None
         self.sio = socketio.Client()
-        self.sio.connect(self.url + '?data=/data/box/' + self.id, namespaces=['/data'])
+        self.sio.connect(self.url + "?data=/data/box/" + self.id, namespaces=["/data"])
 
-        @self.sio.on('dataUpdate', namespace='/data')
+        @self.sio.on("dataUpdate", namespace="/data")
         def on_message(type, id, data):
             if _verbose:
-                print('dataUpdate event: ' + str(data))
+                print("dataUpdate event: " + str(data))
             self.received_state = data
             self.backend_event.set()
-
 
     def sleep(self, seconds):
         """Wait for the provided number of seconds, returning immediately
@@ -82,42 +82,39 @@ class TaskBox:
             return state
         return None
 
-
     def read(self):
         """Read state from server and return it. May raise NetworkException."""
         try:
             response = self.session.get(self.url + "/data/box/" + self.id)
         except Exception as e:
-            raise NetworkException('State read from server failed (' + str(e) +')')
+            raise NetworkException("State read from server failed (" + str(e) + ")")
         if response.status_code == 200:
             state = json.loads(response.text)
             if _verbose:
-                    print ('Read from backend: ' + str(state))
+                print("Read from backend: " + str(state))
             return state
         else:
-            raise NetworkException('State read from server failed (' + str(response.status_code) +')')
-    
+            raise NetworkException("State read from server failed (" + str(response.status_code) + ")")
+
     def write(self, state):
         """Write state to server and return the new state. May raise NetworkException or ConcurrentModificationException."""
         payload = json.dumps(state)
         try:
             response = self.session.post(self.url + "/data/box/" + self.id, data=payload)
         except Exception as e:
-            raise NetworkException('State write to server failed (' + str(e) +')')
+            raise NetworkException("State write to server failed (" + str(e) + ")")
 
         if _verbose:
-            print ("Write to backend:\n    " + str(state) + "\n  =>\n    " + response.text)
+            print("Write to backend:\n    " + str(state) + "\n  =>\n    " + response.text)
 
         if response.status_code == requests.codes.conflict:
             raise ConcurrentModificationException
 
         if response.status_code != requests.codes.ok:
-                raise NetworkException('State write to server failed (' + str(response.status_code) +')')
+            raise NetworkException("State write to server failed (" + str(response.status_code) + ")")
 
         state = json.loads(response.text)
         return state
-
-
 
 
 # Mock implementation of server taskbox
@@ -126,8 +123,7 @@ class MockTaskBox:
         self.id = id
         self.state = initial_state_value
         self.mock_state_file = Path("backend-mock-" + id + ".json")
-        print("Mock backend created, write to file '" + str(self.mock_state_file)
-         + "' to change backend state")
+        print("Mock backend created, write to file '" + str(self.mock_state_file) + "' to change backend state")
 
     def sleep(self, seconds):
         sleep(seconds)
@@ -183,26 +179,33 @@ class TaskBoxRunner:
         self._defaults(options)
         self._validate(options)
 
-        self._mock = options['mock_server']
-        if options['mock_server']:
-            self._box = MockTaskBox(options['id'], options.get('initial_state', {}))
+        self._mock = options["mock_server"]
+        if options["mock_server"]:
+            self._box = MockTaskBox(options["id"], options.get("initial_state", {}))
         else:
-            self._box = TaskBox(options['id'], options['url'], options.get('initial_state', {}), options.get('proxy'), options.get('user'),options.get('passwd'))
-        
-        if options['mock_pi']:
-            if options['init_mock']:
-                options['init_mock']()
-        else:
-            if options['init']:
-                options['init']()
+            self._box = TaskBox(
+                options["id"],
+                options["url"],
+                options.get("initial_state", {}),
+                options.get("proxy"),
+                options.get("user"),
+                options.get("passwd"),
+            )
 
-        self._callback = options['callback']
+        if options["mock_pi"]:
+            if options["init_mock"]:
+                options["init_mock"]()
+        else:
+            if options["init"]:
+                options["init"]()
+
+        self._callback = options["callback"]
         self.options = options
 
     def run(self):
-        run_interval = self.options['run_interval']
-        poll_interval = self.options['poll_interval']
-        write_interval = self.options['write_interval']
+        run_interval = self.options["run_interval"]
+        poll_interval = self.options["poll_interval"]
+        write_interval = self.options["write_interval"]
 
         self._previous_backend_state = {}
         self._state = None
@@ -232,7 +235,6 @@ class TaskBoxRunner:
                 self._write_backend()
                 next_write_time = time() + write_interval
 
-
     def _poll_backend(self):
         try:
             read_state = self._box.read()
@@ -253,7 +255,6 @@ class TaskBoxRunner:
             else:
                 raise Exception("Could not read/write initial backend state: " + str(err))
 
-
     def _write_backend(self):
         try:
             self._state = self._box.write(self._state)
@@ -265,93 +266,92 @@ class TaskBoxRunner:
         except NetworkException as err:
             print("NETWORK ERROR: Could not write to backend: " + str(err))
 
-
     def _call_callback(self, backend_change):
         new_state = self._callback(copy.deepcopy(self._state), backend_change)
         if new_state != None and new_state != self._state:
             self._state = new_state
             self._state_changed = True
 
-
     # Returns True if detected backend state change during sleep
     def _wait_until(self, t):
-        while (t > time()):
+        while t > time():
             state = self._box.sleep(t - time())
             # Do some sanity checks on state for safety
-            if state and state.get('type', '') == 'box' and state.get('id', '') == self.options['id'] and state.get('version', 0) > self._previous_backend_state.get('version', 0):
+            if (
+                state
+                and state.get("type", "") == "box"
+                and state.get("id", "") == self.options["id"]
+                and state.get("version", 0) > self._previous_backend_state.get("version", 0)
+            ):
                 return True
         return False
 
-
     def _defaults(self, options):
-        options['mock_pi'] = options.get('mock_pi', False)
-        options['mock_server'] = options.get('mock_server', False)
-        options['poll_interval'] = options.get('poll_interval', 60)
-        options['write_interval'] = options.get('write_interval', 0)
-        options['init'] = options.get('init', None)
-        options['init_mock'] = options.get('init_mock', None)
-
+        options["mock_pi"] = options.get("mock_pi", False)
+        options["mock_server"] = options.get("mock_server", False)
+        options["poll_interval"] = options.get("poll_interval", 60)
+        options["write_interval"] = options.get("write_interval", 0)
+        options["init"] = options.get("init", None)
+        options["init_mock"] = options.get("init_mock", None)
 
     def _validate(self, options):
-        if 'id' not in options:
+        if "id" not in options:
             raise Exception("'id' is not defined, use --id <myid>")
-        if 'callback' not in options:
+        if "callback" not in options:
             raise Exception("'callback' is not defined")
-        if 'run_interval' not in options:
+        if "run_interval" not in options:
             raise Exception("'run_interval' is not defined")
-        if options.get('url', '').endswith('/'):
-            options['url'] = options['url'][:-1]
+        if options.get("url", "").endswith("/"):
+            options["url"] = options["url"][:-1]
 
     def _inc_time(self, t, increment):
         t = t + increment
-        if t < time()-increment:
-            t=time()
+        if t < time() - increment:
+            t = time()
         return t
 
     def _parse_command_line(self, options):
         global _verbose
-        
-        parser = argparse.ArgumentParser(description='Task box startup')
-        parser.add_argument('--id', help='Task box ID in backend')
-        parser.add_argument('--mock-pi', action='store_true', help='Use mock implementation instead of GPIO')
-        parser.add_argument('--mock-server', action='store_true', help='Use mock backend')
-        parser.add_argument('--run-interval', type=float, help='Override running interval (secs, float)')
-        parser.add_argument('--poll-interval', type=float, help='Override polling interval (secs, float)')
-        parser.add_argument('--write-interval', type=float, help='Override writing interval (secs, float)')
-        parser.add_argument('--url',  help='Define target serve base URL in format <protocol>://<ipaddress>:<port>')
-        parser.add_argument('--verbose', action='store_true', help='Print verbose messages during operation')
-        parser.add_argument('--proxy', help='Use proxy for connections')
-        parser.add_argument('--user', help='Username for basic http auth')
-        parser.add_argument('--passwd', help='Password for basic http auth')
+
+        parser = argparse.ArgumentParser(description="Task box startup")
+        parser.add_argument("--id", help="Task box ID in backend")
+        parser.add_argument("--mock-pi", action="store_true", help="Use mock implementation instead of GPIO")
+        parser.add_argument("--mock-server", action="store_true", help="Use mock backend")
+        parser.add_argument("--run-interval", type=float, help="Override running interval (secs, float)")
+        parser.add_argument("--poll-interval", type=float, help="Override polling interval (secs, float)")
+        parser.add_argument("--write-interval", type=float, help="Override writing interval (secs, float)")
+        parser.add_argument("--url", help="Define target serve base URL in format <protocol>://<ipaddress>:<port>")
+        parser.add_argument("--verbose", action="store_true", help="Print verbose messages during operation")
+        parser.add_argument("--proxy", help="Use proxy for connections")
+        parser.add_argument("--user", help="Username for basic http auth")
+        parser.add_argument("--passwd", help="Password for basic http auth")
 
         args = parser.parse_args()
         if args.id:
-            options['id'] = args.id
+            options["id"] = args.id
         if args.mock_pi:
-            options['mock_pi'] = True
+            options["mock_pi"] = True
         if args.mock_server:
-            options['mock_server'] = True
+            options["mock_server"] = True
         if args.run_interval:
-            options['run_interval'] = args.run_interval
+            options["run_interval"] = args.run_interval
         if args.poll_interval:
-            options['poll_interval'] = args.poll_interval
+            options["poll_interval"] = args.poll_interval
         if args.write_interval:
-            options['write_interval'] = args.write_interval
+            options["write_interval"] = args.write_interval
         if args.url:
-            options['url'] = args.url
+            options["url"] = args.url
         if args.verbose:
             _verbose = True
         if args.proxy:
-            options['proxy'] = args.proxy
+            options["proxy"] = args.proxy
         if args.user:
             if not args.passwd:
-                print('Password not defined for basic http authentication')
+                print("Password not defined for basic http authentication")
                 exit()
-            options['user'] = args.user
-            options['passwd'] = args.passwd
+            options["user"] = args.user
+            options["passwd"] = args.passwd
         if args.passwd:
             if not args.user:
-                print('Username not defined for basic http authentication')
+                print("Username not defined for basic http authentication")
                 exit()
-                    
-        

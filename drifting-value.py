@@ -1,4 +1,3 @@
-
 from odysseus import log
 from odysseus.taskbox import *
 import random
@@ -23,45 +22,46 @@ import microdotphat
 # - white noise which decays with time (set to high value when adjusted)
 
 
-CALLS_PER_SECOND=10
+CALLS_PER_SECOND = 10
 
-SWITCH_GPIO_PIN=4
+SWITCH_GPIO_PIN = 4
 
 default_state = {
-    "value": 330.5,         # current "real" value
+    "value": 330.5,  # current "real" value
     "displayValue": 330.5,  # displayed value
-    "rndMagnitude": 0,      # current magnitude of white noise
-    "brownNoiseValue": 0,   # current brown noise value
-    "drift": 3,             # value drift per MINUTE
-    "driftPause": 0,        # drift pause secs remaining
-    "sinePosition": 0,      # sine wave position
-    "minDriftPerMinute": 2, # minimum drift per MINUTE when randomizing drift
-    "maxDriftPerMinute": 4, # maximum drift per MINUTE when randomizing drift
+    "rndMagnitude": 0,  # current magnitude of white noise
+    "brownNoiseValue": 0,  # current brown noise value
+    "drift": 3,  # value drift per MINUTE
+    "driftPause": 0,  # drift pause secs remaining
+    "sinePosition": 0,  # sine wave position
+    "minDriftPerMinute": 2,  # minimum drift per MINUTE when randomizing drift
+    "maxDriftPerMinute": 4,  # maximum drift per MINUTE when randomizing drift
     "config": {
-        "safeRangeMin": 330,         # minimum safe value (backend uses)
-        "safeRangeMax": 740,         # maximum safe value (backend uses)
-        "maxRndMagnitude": 30,       # maximum white noise value when updating value
-        "rndMagnitudeDecay": 0.95,   # how fast random magnitude decays (stabilation time: 0.95 ~5s, 0.97 ~10s)
-        "brownNoiseSpeed": 0.1,      # magnitude how fast brown noise changes
-        "brownNoiseMax": 10,         # maximum absolute value of brownian noise
-        "sineMagnitude": 1,          # magnitude of sine wave
-        "sineSpeed": 60,             # sine cycle time in seconds
-        "driftDelayAfterAdjust": 60, # number of secs to pause drift after adjustment is done
-        "adjustUpAmount": 0.3,       # amount to adjust up per call (pressure rise)
-        "adjustDownAmount": 1,       # amount to adjust down per call (pressure release)
-        "probDriftDown": 0.66,       # probability drift will go downwards (otherwise upward)
-    }
+        "safeRangeMin": 330,  # minimum safe value (backend uses)
+        "safeRangeMax": 740,  # maximum safe value (backend uses)
+        "maxRndMagnitude": 30,  # maximum white noise value when updating value
+        "rndMagnitudeDecay": 0.95,  # how fast random magnitude decays (stabilation time: 0.95 ~5s, 0.97 ~10s)
+        "brownNoiseSpeed": 0.1,  # magnitude how fast brown noise changes
+        "brownNoiseMax": 10,  # maximum absolute value of brownian noise
+        "sineMagnitude": 1,  # magnitude of sine wave
+        "sineSpeed": 60,  # sine cycle time in seconds
+        "driftDelayAfterAdjust": 60,  # number of secs to pause drift after adjustment is done
+        "adjustUpAmount": 0.3,  # amount to adjust up per call (pressure rise)
+        "adjustDownAmount": 1,  # amount to adjust down per call (pressure release)
+        "probDriftDown": 0.66,  # probability drift will go downwards (otherwise upward)
+    },
 }
+
 
 def logic(state, backend_change):
     if backend_change:
         print("BACKEND CHANGE")
         return None
-    
+
     config = state["config"]
 
     # Update values
-    state["driftPause"] = max(state["driftPause"] - 1.0/CALLS_PER_SECOND, 0)
+    state["driftPause"] = max(state["driftPause"] - 1.0 / CALLS_PER_SECOND, 0)
     if state["driftPause"] == 0:
         state["value"] += state["drift"] / CALLS_PER_SECOND / 60
     state["rndMagnitude"] = state["rndMagnitude"] * config["rndMagnitudeDecay"]
@@ -84,30 +84,32 @@ def logic(state, backend_change):
             state["drift"] = -state["drift"]
 
     # Limits
-    if state["value"] < config.get("safeRangeMin", 0)/2:
-        state["value"] = config.get("safeRangeMin", 0)/2
-    if state["value"] > config.get("safeRangeMax", 1000)*2:
-        state["value"] = config.get("safeRangeMax", 1000)*2
+    if state["value"] < config.get("safeRangeMin", 0) / 2:
+        state["value"] = config.get("safeRangeMin", 0) / 2
+    if state["value"] > config.get("safeRangeMax", 1000) * 2:
+        state["value"] = config.get("safeRangeMax", 1000) * 2
 
     # Print value
     sine = math.sin(state["sinePosition"]) * config["sineMagnitude"]
-    #rnd = random.uniform(-state["rndMagnitude"], state["rndMagnitude"])
+    # rnd = random.uniform(-state["rndMagnitude"], state["rndMagnitude"])
     rnd = random.gauss(0, state["rndMagnitude"])
     value = state["value"] + state["brownNoiseValue"] + rnd + sine
     state["displayValue"] = value
 
     # display  actual  brown  sine  white-mag
-    #print("{:.1f}\t{:.2f}\t{:+.2f}\t{:+.2f}\t{:.2f}".format(value, state["value"], state["brownNoiseValue"], sine, state["rndMagnitude"]))
+    # print("{:.1f}\t{:.2f}\t{:+.2f}\t{:+.2f}\t{:.2f}".format(value, state["value"], state["brownNoiseValue"], sine, state["rndMagnitude"]))
 
     microdotphat.write_string("{:.2f}".format(value), kerning=False)
     microdotphat.show()
 
     return state
 
+
 getAdjustment = None
 
 
 ## Mock implementation
+
 
 def init_mock():
     global getAdjustment
@@ -128,8 +130,11 @@ def getAdjustmentMock(config):
 
 pi = None
 i2c_handle = None
+
+
 def init():
     import pigpio
+
     global pi
     global getAdjustment
     global i2c_handle
@@ -143,14 +148,14 @@ def init():
 
     pi.set_mode(SWITCH_GPIO_PIN, pigpio.INPUT)
     pi.set_pull_up_down(SWITCH_GPIO_PIN, pigpio.PUD_UP)
-    pi.set_glitch_filter(SWITCH_GPIO_PIN, 200000) # Report change only after 200ms steady
+    pi.set_glitch_filter(SWITCH_GPIO_PIN, 200000)  # Report change only after 200ms steady
 
 
 def getAdjustmentReal(config):
     p = readPressure()
     if p > 110:
         return -config["adjustDownAmount"]
-    
+
     v = pi.read(SWITCH_GPIO_PIN)
     if v == 0:
         return config["adjustUpAmount"]
@@ -163,9 +168,9 @@ def readPressure():
     if len(data) < 2:
         print("COULD NOT READ BYTES FROM SENSOR")
         return 0
-    value = data[0]*256 + data[1]
-    percentage = (value / 0x3FFF)*100
-    kpa = ( percentage - 10 ) * pressure_range / 80
+    value = data[0] * 256 + data[1]
+    percentage = (value / 0x3FFF) * 100
+    kpa = (percentage - 10) * pressure_range / 80
     return kpa
 
 
