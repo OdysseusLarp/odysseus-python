@@ -42,19 +42,27 @@ def read_pins(pins):
     conns = {}
     for i in range(0, len(pins)):
         ipin = pins[i]
-        pi.set_mode(ipin, pigpio.OUTPUT)
-        pi.write(ipin, 1)
-        vals = pi.read_bank_1()
-        pi.set_mode(ipin, pigpio.INPUT)
-        pi.set_pull_up_down(ipin, pigpio.PUD_DOWN)
-        # print("i=" + str(i) + " vals=" + '{:032b}'.format(vals))
-        conns[str(i)] = []
-        for j in range(0, len(pins)):
-            jpin = pins[j]
-            if i == j:
-                continue
-            if (1 << jpin) & vals:
-                conns[str(i)].append(j)
+
+        state = pi.read(ipin)
+        if state:
+            # Pin is externally pulled up. Every other pin will report this pin to be connected due
+            # to the pull-up, thus emulate this by reporting every pin to be connected to this one.
+            conns[str(i)] = list(range(0, len(pins)))
+        else:
+            # Regular logic. Set pin to output / high and see which pins are afterwards HIGH.
+            pi.set_mode(ipin, pigpio.OUTPUT)
+            pi.write(ipin, 1)
+            vals = pi.read_bank_1()
+            pi.set_mode(ipin, pigpio.INPUT)
+            pi.set_pull_up_down(ipin, pigpio.PUD_DOWN)
+            # print("i=" + str(i) + " vals=" + '{:032b}'.format(vals))
+            conns[str(i)] = []
+            for j in range(0, len(pins)):
+                jpin = pins[j]
+                if i == j:
+                    continue
+                if (1 << jpin) & vals:
+                    conns[str(i)].append(j)
     return conns
 
 
