@@ -42,6 +42,10 @@ def scale_color(color: tuple[int, int, int], scale: float) -> tuple[int, int, in
     return (int(color[0] * scale), int(color[1] * scale), int(color[2] * scale))
 
 
+def clamp(value, min_value, max_value):
+    return max(min(value, max_value), min_value)
+
+
 def gamma_corrected_value(input_value, max_input=255, max_output=255, gamma=2.2, clamp_to_one=False):
     if clamp_to_one:
         if input_value == 0:
@@ -165,8 +169,14 @@ def capacity_display_animation(run_while: Callable[[], bool]):
 
 def white_static(min_value=50, max_value=255):
     for i in range(NEOPIXEL_COUNT):
-        n = gamma[random.randint(min_value, max_value)]
-        globals.neopixels[i] = (n, n, n)
+        n = random.randint(min_value, max_value)
+        dr = random.randint(-10, 10)
+        dg = random.randint(-10, 10)
+        db = random.randint(-10, 10)
+        r = gamma[clamp(n + dr, 0, 255)]
+        g = gamma[clamp(n + dg, 0, 255)]
+        b = gamma[clamp(n + db, 0, 255)]
+        globals.neopixels[i] = (r, g, b)
 
 
 def fade_up_down(delay: float = 0.01, step: int = 1):
@@ -220,7 +230,7 @@ def jump_end_animation(run_while: Callable[[], bool]):
         fade_up_down(0.001, step=5)
         fade_up_down(0.001, step=5)
         fade_up_down(0.001, step=5)
-        sleep(3)
+        sleep(5)
 
         # Draw increasing capacity
         capacity = globals.capacity_percent
