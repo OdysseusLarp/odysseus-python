@@ -3,47 +3,15 @@ from typing import Callable
 from bigbattery.consts import NEOPIXEL_COUNT, EL_WIRE_PIN, NEOPIXEL_INTERNAL_BRIGHTNESS
 import bigbattery.globals as globals
 import random
-from bigbattery.helpers import arange
-import datetime
+from bigbattery.helpers import arange, clamp
 
-
-#### Helper functions
+#### Helpers
 
 OFF = (0, 0, 0)
 
 
-def forever() -> bool:
-    return True
-
-
-def once() -> Callable[[], bool]:
-    has_run = False
-
-    def run_once():
-        nonlocal has_run
-        if has_run:
-            return False
-        has_run = True
-        return True
-
-    return run_once
-
-
-def duration(seconds: float) -> Callable[[], bool]:
-    end_at = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
-
-    def run_while():
-        return datetime.datetime.now() < end_at
-
-    return run_while
-
-
 def scale_color(color: tuple[int, int, int], scale: float) -> tuple[int, int, int]:
     return (int(color[0] * scale), int(color[1] * scale), int(color[2] * scale))
-
-
-def clamp(value, min_value, max_value):
-    return max(min(value, max_value), min_value)
 
 
 def gamma_corrected_value(input_value, max_input=255, max_output=255, gamma=2.2, clamp_to_one=False):

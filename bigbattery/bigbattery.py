@@ -18,7 +18,7 @@ from bigbattery.consts import (
 )
 import bigbattery.neopixel_animations as neopixel_animations
 import bigbattery.elwire_animations as elwire_animations
-from bigbattery.neopixel_animations import forever, duration, once
+from bigbattery.helpers import forever, duration, once
 import bigbattery.globals as globals
 
 # Usage:  python3 battery.py --id myid
@@ -80,8 +80,13 @@ def neopixel_animation_thread():
 
 
 def elwire_animation_thread():
-    # elwire_animations.fade_in_out_animation(run_while=forever)
-    elwire_animations.blink_animation(run_while=forever)
+    elwire_animations.burn_in()
+
+    # elwire_animations.blink_animation(run_while=forever)
+    print("CONNECT")
+    elwire_animations.connected_animation(run_while=duration(30), initial_animation=True)
+    print("DISCONNECT")
+    elwire_animations.disconnected_animation(run_while=forever)
 
 
 def box_init():
