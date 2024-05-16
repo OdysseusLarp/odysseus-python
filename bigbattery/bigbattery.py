@@ -14,8 +14,10 @@ from bigbattery.consts import (
     NEOPIXEL_ORDER,
     NEOPIXEL_BRIGHTNESS,
     NEOPIXEL_INTERNAL_BRIGHTNESS,
+    LOCATION_INPUT_PINS,
 )
-import bigbattery.neopixel_animations as animations
+import bigbattery.neopixel_animations as neopixel_animations
+import bigbattery.elwire_animations as elwire_animations
 from bigbattery.neopixel_animations import forever, duration, once
 import bigbattery.globals as globals
 
@@ -37,9 +39,9 @@ def logic(state, backend_change):
 
     globals.capacity_percent = int(state["capacity_percent"])
 
-    if animations.current_brightness() != state.get("brightness", NEOPIXEL_INTERNAL_BRIGHTNESS):
-        print(f"Changing brightness from {animations.current_brightness()} to {state['brightness']}")
-        animations.recalculate_gamma(state["brightness"])
+    if neopixel_animations.current_brightness() != state.get("brightness", NEOPIXEL_INTERNAL_BRIGHTNESS):
+        print(f"Changing brightness from {neopixel_animations.current_brightness()} to {state['brightness']}")
+        neopixel_animations.recalculate_gamma(state["brightness"])
 
     return state
 
@@ -60,10 +62,6 @@ def update_charge_display(percentage):
     print("Charge: " + str(percentage) + "%")
 
 
-# Pins that indicate where battery is connected. Each can be floating or grounded.
-# These are converted to an int as bits, 0 = floating, 1 = GND.
-# First pin in array is the least significant bit.
-LOCATION_INPUT_PINS = [board.D4, board.D5, board.D6]
 location_pins = []
 
 
@@ -72,13 +70,18 @@ def neopixel_animation_thread():
     # animations.capacity_display_animation(run_while=forever)
     while True:
         print("Jumping")
-        animations.jump_static_animation(run_while=duration(10))
+        neopixel_animations.jump_static_animation(run_while=duration(10))
         print("Jump end")
-        animations.jump_end_animation(run_while=once())
+        neopixel_animations.jump_end_animation(run_while=once())
         print("Capacity")
-        animations.capacity_display_animation(run_while=duration(10))
+        neopixel_animations.capacity_display_animation(run_while=duration(10))
     print("Starting neopixel animation", globals.neopixels)
-    animations.jump_end_animation(run_while=forever)
+    neopixel_animations.jump_end_animation(run_while=forever)
+
+
+def elwire_animation_thread():
+    # elwire_animations.fade_in_out_animation(run_while=forever)
+    elwire_animations.blink_animation(run_while=forever)
 
 
 def box_init():
@@ -91,7 +94,8 @@ def box_init():
         pixel_order=NEOPIXEL_ORDER,
     )
 
-    el_wire = pwmio.PWMOut(EL_WIRE_PIN, frequency=5000, duty_cycle=0)
+    globals.elwire = pwmio.PWMOut(EL_WIRE_PIN, frequency=500, duty_cycle=0)
+    print(f"Initialized EL-wire PWM with frequency {globals.elwire.frequency}")
 
     # Initialize location pins
     for pin in LOCATION_INPUT_PINS:
@@ -103,6 +107,11 @@ def box_init():
     print("Starting neopixel animation thread")
     neopixel_thread = threading.Thread(target=neopixel_animation_thread)
     neopixel_thread.start()
+
+    # Start EL wire animation thread
+    print("Starting EL wire animation thread")
+    elwire_thread = threading.Thread(target=elwire_animation_thread)
+    elwire_thread.start()
 
 
 options = {

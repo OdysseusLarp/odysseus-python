@@ -12,5 +12,10 @@ NEOPIXEL_BRIGHTNESS = 1
 # Default internal initial brightness
 NEOPIXEL_INTERNAL_BRIGHTNESS = 20
 
+# EL-wire PWM pin
 EL_WIRE_PIN = board.D13
-el_wire = None
+
+# Pins that indicate where battery is connected. Each can be floating or grounded.
+# These are converted to an int as bits, 0 = floating, 1 = GND.
+# First pin in array is the least significant bit.
+LOCATION_INPUT_PINS = [board.D22, board.D23, board.D24, board.D25]
