@@ -35,7 +35,7 @@ default_state = {
 
 def logic(state, backend_change):
     # Update connected_position
-    state["connected_position"] = read_position()
+    globals.connected_position = state["connected_position"] = read_position()
 
     globals.capacity_percent = int(state["capacity_percent"])
 
@@ -80,13 +80,23 @@ def neopixel_animation_thread():
 
 
 def elwire_animation_thread():
+    # EL wire flickers initially, use burn-in animation to make it stable
     elwire_animations.burn_in()
 
-    # elwire_animations.blink_animation(run_while=forever)
-    print("CONNECT")
-    elwire_animations.connected_animation(run_while=duration(30), initial_animation=True)
-    print("DISCONNECT")
-    elwire_animations.disconnected_animation(run_while=forever)
+    def is_connected() -> bool:
+        return globals.connected_position != 0
+
+    previous_position = 0
+    while True:
+        if globals.connected_position != previous_position:
+            previous_position = globals.connected_position
+            if globals.connected_position == 0:
+                print("Cable disconnect")
+                # Disconnect animation returns once complete, thus run "forever"
+                elwire_animations.disconnected_animation(run_while=forever)
+            else:
+                print("Cable connect")
+                elwire_animations.connected_animation(run_while=is_connected, initial_animation=True)
 
 
 def box_init():

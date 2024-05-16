@@ -53,3 +53,11 @@ def duration(seconds: float) -> Callable[[], bool]:
         return datetime.datetime.now() < end_at
 
     return run_while
+
+
+def sleep_while(seconds: float, run_while: Callable[[], bool]):
+    end_at = datetime.datetime.now() + datetime.timedelta(seconds=seconds)
+    while run_while():
+        sleep(0.1)
+        if datetime.datetime.now() > end_at:
+            break

@@ -2,7 +2,7 @@ from typing import Callable
 from time import sleep
 import random
 import bigbattery.globals as globals
-from bigbattery.helpers import duration
+from bigbattery.helpers import duration, sleep_while
 
 elwire_levels = [
     0,
@@ -100,35 +100,31 @@ def burn_in():
     sleep(1)
 
 
-def play_animation(run_while: Callable[[], bool], animation: list[tuple[int, float]], loop: bool = False):
-    while run_while():
-        for level, duration in animation:
-            print(level, duration)
-            globals.elwire.duty_cycle = elwire_levels[level]
-            sleep(duration)
-            if not run_while():
-                loop = False
-                break
-        if not loop:
+def play_animation(run_while: Callable[[], bool], animation: list[tuple[int, float]]):
+    for level, duration in animation:
+        print(level, duration)
+        globals.elwire.duty_cycle = elwire_levels[level]
+        sleep_while(duration, run_while)
+        if not run_while():
             break
 
 
 def connected_animation(run_while: Callable[[], bool], initial_animation: bool = True):
     """Animation to play when battery is connected."""
     if initial_animation:
-        play_animation(run_while, CONNECT_ANIMATION, loop=False)
+        play_animation(run_while, CONNECT_ANIMATION)
     while run_while():
         # Initial animation ends off, so delay first then flash
         t = random.uniform(0.1, 5)
         print("Sleep", t)
-        sleep(t)
+        sleep_while(t, run_while)
         globals.elwire.duty_cycle = elwire_levels[MAX_LEVEL]
         sleep(0.1)
         globals.elwire.duty_cycle = elwire_levels[0]
 
 
 def disconnected_animation(run_while: Callable[[], bool]):
-    play_animation(run_while, DISCONNECT_ANIMATION, loop=False)
+    play_animation(run_while, DISCONNECT_ANIMATION)
 
 
 def fade_in_out_animation(run_while: Callable[[], bool]):
