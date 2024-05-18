@@ -95,14 +95,13 @@ DISCONNECT_ANIMATION = [
 
 def burn_in():
     """Initial burn-in animation. EL wire flickers initially so purge it out."""
-    fade_in_out_animation(run_while=duration(3))
+    fade_in_out_animation(run_while=duration(5))
     globals.elwire.duty_cycle = 0
     sleep(1)
 
 
 def play_animation(run_while: Callable[[], bool], animation: list[tuple[int, float]]):
     for level, duration in animation:
-        print(level, duration)
         globals.elwire.duty_cycle = elwire_levels[level]
         sleep_while(duration, run_while)
         if not run_while():
@@ -116,7 +115,6 @@ def connected_animation(run_while: Callable[[], bool], initial_animation: bool =
     while run_while():
         # Initial animation ends off, so delay first then flash
         t = random.uniform(0.1, 5)
-        print("Sleep", t)
         sleep_while(t, run_while)
         globals.elwire.duty_cycle = elwire_levels[MAX_LEVEL]
         sleep(0.1)
@@ -125,18 +123,20 @@ def connected_animation(run_while: Callable[[], bool], initial_animation: bool =
 
 def disconnected_animation(run_while: Callable[[], bool]):
     play_animation(run_while, DISCONNECT_ANIMATION)
+    # Loop dark until return
+    globals.elwire.duty_cycle = 0
+    while run_while():
+        sleep(1)
 
 
-def fade_in_out_animation(run_while: Callable[[], bool]):
+def fade_in_out_animation(run_while: Callable[[], bool], sleep_time: float = 0.1):
     while run_while():
         for i in range(0, MAX_LEVEL + 1):
-            print(i, elwire_levels[i])
             globals.elwire.duty_cycle = elwire_levels[i]
-            sleep(0.1)
+            sleep(sleep_time)
         for i in range(MAX_LEVEL - 1, 0, -1):
-            print(i, elwire_levels[i])
             globals.elwire.duty_cycle = elwire_levels[i]
-            sleep(0.1)
+            sleep(sleep_time)
 
 
 def blink_animation(run_while: Callable[[], bool]):

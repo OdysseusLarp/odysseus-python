@@ -30,15 +30,19 @@ default_state = {
     "capacity_percent": 100,
     "connected_position": 0,
     "brightness": 20,
+    "active": False,
 }
 
 
 def logic(state, backend_change):
-    # Update connected_position
+    # Update connected_position in state
     globals.connected_position = state["connected_position"] = read_position()
 
+    # Update globals from state
+    globals.is_active = state["active"]
     globals.capacity_percent = int(state["capacity_percent"])
 
+    # Update charge display brightness if necessary
     if neopixel_animations.current_brightness() != state.get("brightness", NEOPIXEL_INTERNAL_BRIGHTNESS):
         print(f"Changing brightness from {neopixel_animations.current_brightness()} to {state['brightness']}")
         neopixel_animations.recalculate_gamma(state["brightness"])
@@ -46,7 +50,11 @@ def logic(state, backend_change):
     return state
 
 
+location_pins = []
+
+
 def read_position():
+    """Read connected position from location pins."""
     position_value = 0
 
     for i in range(len(location_pins)):
@@ -57,17 +65,12 @@ def read_position():
     return position_value
 
 
-def update_charge_display(percentage):
-    # TODO: Implement
-    print("Charge: " + str(percentage) + "%")
-
-
-location_pins = []
-
-
 def neopixel_animation_thread():
-    #    animations.fade_test_animation(run_while=forever)
-    # animations.capacity_display_animation(run_while=forever)
+    """Background thread for running Neopixel animations based on global state."""
+    # Show fade up/down to show LEDs work
+    neopixel_animations.fade_up_down()
+    neopixel_animations.fade_up_down()
+
     while True:
         print("Jumping")
         neopixel_animations.jump_static_animation(run_while=duration(10))
@@ -80,23 +83,41 @@ def neopixel_animation_thread():
 
 
 def elwire_animation_thread():
+    """Background thread for running EL wire animations based on global state."""
     # EL wire flickers initially, use burn-in animation to make it stable
     elwire_animations.burn_in()
 
-    def is_connected() -> bool:
-        return globals.connected_position != 0
+    def is_disconnected() -> bool:
+        return globals.connected_position == 0
 
-    previous_position = 0
+    def is_connected_and_inactive() -> bool:
+        return globals.connected_position != 0 and not globals.is_active
+
+    def is_connected_and_active() -> bool:
+        return globals.connected_position != 0 and globals.is_active
+
+    previous_connected = False
     while True:
-        if globals.connected_position != previous_position:
-            previous_position = globals.connected_position
-            if globals.connected_position == 0:
-                print("Cable disconnect")
-                # Disconnect animation returns once complete, thus run "forever"
-                elwire_animations.disconnected_animation(run_while=forever)
-            else:
-                print("Cable connect")
-                elwire_animations.connected_animation(run_while=is_connected, initial_animation=True)
+        if is_disconnected():
+            print("elwire: Disconnected")
+            elwire_animations.disconnected_animation(run_while=is_disconnected)
+            previous_connected = False
+        elif is_connected_and_inactive():
+            print("elwire: Connected and inactive")
+            elwire_animations.connected_animation(
+                run_while=is_connected_and_inactive,
+                # Show initial animiation only if was previously disconnected
+                initial_animation=(not previous_connected),
+            )
+            previous_connected = True
+        elif is_connected_and_active():
+            print("elwire: Connected and active")
+            # TODO: Add different animations based on location
+            elwire_animations.fade_in_out_animation(run_while=is_connected_and_active, sleep_time=0.02)
+            previous_connected = True
+        else:
+            print(f"elwire: ERROR unknown state position={globals.connected_position} active={globals.is_active}")
+            sleep(1)
 
 
 def box_init():
