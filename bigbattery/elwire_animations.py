@@ -108,22 +108,34 @@ def play_animation(run_while: Callable[[], bool], animation: list[tuple[int, flo
             break
 
 
+def static_animation(
+    run_while: Callable[[], bool], rand_min: float = 0.1, rand_max: float = 5.0, flash_duration: float = 0.1
+):
+    while run_while():
+        # Delay first then flash
+        t = random.uniform(rand_min, rand_max)
+        sleep_while(t, run_while)
+        globals.elwire.duty_cycle = elwire_levels[MAX_LEVEL]
+        sleep(flash_duration)
+        globals.elwire.duty_cycle = elwire_levels[0]
+
+
 def connected_animation(run_while: Callable[[], bool], initial_animation: bool = True):
     """Animation to play when battery is connected."""
     if initial_animation:
         play_animation(run_while, CONNECT_ANIMATION)
-    while run_while():
-        # Initial animation ends off, so delay first then flash
-        t = random.uniform(0.1, 5)
-        sleep_while(t, run_while)
-        globals.elwire.duty_cycle = elwire_levels[MAX_LEVEL]
-        sleep(0.1)
-        globals.elwire.duty_cycle = elwire_levels[0]
+    static_animation(run_while)
 
 
 def disconnected_animation(run_while: Callable[[], bool]):
     play_animation(run_while, DISCONNECT_ANIMATION)
     # Loop dark until return
+    globals.elwire.duty_cycle = 0
+    while run_while():
+        sleep(1)
+
+
+def black_animation(run_while: Callable[[], bool]):
     globals.elwire.duty_cycle = 0
     while run_while():
         sleep(1)

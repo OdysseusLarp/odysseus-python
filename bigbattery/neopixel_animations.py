@@ -1,9 +1,10 @@
 from time import sleep
 from typing import Callable
-from bigbattery.consts import NEOPIXEL_COUNT, EL_WIRE_PIN, NEOPIXEL_INTERNAL_BRIGHTNESS
+from bigbattery.consts import NEOPIXEL_COUNT, EL_WIRE_PIN, NEOPIXEL_INTERNAL_BRIGHTNESS, JUMP_EXIT_TIME
 import bigbattery.globals as globals
 import random
 from bigbattery.helpers import arange, clamp
+import datetime
 
 #### Helpers
 
@@ -92,7 +93,7 @@ def fade_test_animation(run_while: Callable[[], bool]):
 
 
 def capacity_blinking_led(percent: int):
-    return (NEOPIXEL_COUNT - 1) * min(percent, 99) // 100
+    return (NEOPIXEL_COUNT - 2) * min(percent, 99) // 100 + 1
 
 
 def capacity_led_color(led: int):
@@ -109,6 +110,18 @@ def capacity_display(count: int):
             globals.neopixels[i] = apply_gamma(capacity_led_color(i))
         else:
             globals.neopixels[i] = (0, 0, 0)
+
+
+def battery_empty_animation(run_while: Callable[[], bool]):
+    globals.neopixels.fill((0, 0, 0))
+    blinking_led_color = apply_gamma(capacity_led_color(0))
+    while run_while():
+        globals.neopixels[0] = blinking_led_color
+        globals.neopixels.show()
+        sleep(1)
+        globals.neopixels[0] = OFF
+        globals.neopixels.show()
+        sleep(1)
 
 
 def capacity_display_animation(run_while: Callable[[], bool]):
@@ -175,9 +188,10 @@ def jump_static_animation(run_while: Callable[[], bool]):
 def jump_end_animation(run_while: Callable[[], bool]):
     """Animation when exiting jump"""
     while run_while():
-        # Static intensifies for 4 secs
+        # Static intensifies for JUMP_EXIT_TIME secs
+        # Due to code delays, true duration is ~35% longer than total_time, so scale it down a bit
+        total_time = JUMP_EXIT_TIME / 1.35
         delays = list(arange(0.05, 0.005, -0.005))
-        total_time = 4
         time_per_step = total_time / len(delays)
         min_value = JUMP_STATIC_MIN_VALUE
         max_value = JUMP_STATIC_MAX_VALUE
