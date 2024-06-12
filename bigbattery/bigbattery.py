@@ -36,8 +36,9 @@ RUN_INTERVAL = 1.0
 default_state = {
     "capacity_percent": 100,
     "connected_position": 0,
-    "brightness": 20,
     "active": False,
+    "brightness": 20,
+    "led_rotation": 12,
 }
 
 previous_connected_position = 0
@@ -46,15 +47,16 @@ previous_connected_position = 0
 def logic(state, backend_change):
     global previous_connected_position
 
-    # Update connected_position in state if it has remained stable since last run
+    # Update connected_position in state if it has remained stable since last run OR disconnected
     current_connected_position = read_position()
-    if previous_connected_position == current_connected_position:
+    if previous_connected_position == current_connected_position or current_connected_position == 0:
         globals.connected_position = state["connected_position"] = current_connected_position
     previous_connected_position = current_connected_position
 
     # Update globals from state
     globals.is_active = state["active"]
     globals.capacity_percent = int(state["capacity_percent"])
+    globals.led_rotation = state["led_rotation"]
 
     # Update charge display brightness if necessary
     if neopixel_animations.current_brightness() != state.get("brightness", NEOPIXEL_INTERNAL_BRIGHTNESS):
@@ -124,7 +126,7 @@ def neopixel_animation_thread():
             neopixel_animations.jump_end_animation(run_while=once())
         elif not has_charge():
             print("Neopixel: Capacity is zero")
-            neopixel_animations.battery_empty_animation(run_while=is_empty)
+            neopixel_animations.battery_empty_animation(run_while=lambda: is_empty() and not is_jumping())
         elif is_connected_and_inactive_and_charged() or is_disconnected():
             print("Neopixel: Capacity display")
             neopixel_animations.capacity_display_animation(
@@ -149,19 +151,17 @@ def elwire_animation_thread():
         if is_jumping():
             # Engineering jump view overrides all others
             print("elwire: Engineering jumping")
-            elwire_animations.static_animation(
-                run_while=is_connected_and_active_and_charged, rand_min=0.0, rand_max=0.3, flash_duration=0.05
-            )
+            elwire_animations.static_animation(run_while=is_jumping, rand_min=0.0, rand_max=0.2, flash_duration=0.05)
             # End animation duration should be approx same as neopixel_animations.jump_end_animation
             # i.e. JUMP_EXIT_TIME plus ~2s flashing
             elwire_animations.static_animation(
-                run_while=duration(JUMP_EXIT_TIME), rand_min=0.0, rand_max=0.15, flash_duration=0.05
+                run_while=duration(JUMP_EXIT_TIME), rand_min=0.0, rand_max=0.1, flash_duration=0.05
             )
             elwire_animations.fade_in_out_animation(run_while=duration(2), sleep_time=0.02)
         elif not has_charge():
             print("elwire: Capacity is zero")
-            elwire_animations.black_animation(run_while=is_empty)
-            previous_connected = False
+            elwire_animations.black_animation(run_while=lambda: is_empty() and not is_jumping())
+            previous_connected = globals.connected_position != 0
         elif is_disconnected():
             print("elwire: Disconnected")
             elwire_animations.disconnected_animation(run_while=is_disconnected)

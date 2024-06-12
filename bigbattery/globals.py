@@ -9,3 +9,5 @@ capacity_percent = 100
 connected_position = 0
 # Whether battery is currently in use
 is_active = False
+# Integer amount of rotation for the display LEDs
+led_rotation = 0

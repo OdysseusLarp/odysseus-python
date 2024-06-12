@@ -11,6 +11,10 @@ import datetime
 OFF = (0, 0, 0)
 
 
+def rot(n: int) -> int:
+    return (n + globals.led_rotation) % NEOPIXEL_COUNT
+
+
 def scale_color(color: tuple[int, int, int], scale: float) -> tuple[int, int, int]:
     return (int(color[0] * scale), int(color[1] * scale), int(color[2] * scale))
 
@@ -74,7 +78,7 @@ def rainbow_cycle_animation(run_while: Callable[[], bool]):
         for j in range(255):
             for i in range(NEOPIXEL_COUNT):
                 pixel_index = (i * 256 // NEOPIXEL_COUNT) + j
-                globals.neopixels[i] = apply_gamma(wheel(pixel_index & 255))
+                globals.neopixels[rot(i)] = apply_gamma(wheel(pixel_index & 255))
             globals.neopixels.show()
             sleep(0.001)
 
@@ -84,7 +88,7 @@ def fade_test_animation(run_while: Callable[[], bool]):
         for i in range(21):
             n = gamma[255 * i // 20]
             print(n)
-            globals.neopixels[i] = (n, n, n)
+            globals.neopixels[rot(i)] = (n, n, n)
         globals.neopixels.show()
         sleep(1)
 
@@ -107,19 +111,19 @@ def capacity_led_color(led: int):
 def capacity_display(count: int):
     for i in range(NEOPIXEL_COUNT):
         if i < count:
-            globals.neopixels[i] = apply_gamma(capacity_led_color(i))
+            globals.neopixels[rot(i)] = apply_gamma(capacity_led_color(i))
         else:
-            globals.neopixels[i] = (0, 0, 0)
+            globals.neopixels[rot(i)] = (0, 0, 0)
 
 
 def battery_empty_animation(run_while: Callable[[], bool]):
     globals.neopixels.fill((0, 0, 0))
     blinking_led_color = apply_gamma(capacity_led_color(0))
     while run_while():
-        globals.neopixels[0] = blinking_led_color
+        globals.neopixels[rot(0)] = blinking_led_color
         globals.neopixels.show()
         sleep(1)
-        globals.neopixels[0] = OFF
+        globals.neopixels[rot(0)] = OFF
         globals.neopixels.show()
         sleep(1)
 
@@ -133,14 +137,14 @@ def capacity_display_animation(run_while: Callable[[], bool]):
 
         blinking_led_color = capacity_led_color(blinking_led)
         for i in range(11):
-            globals.neopixels[blinking_led] = apply_gamma(scale_color(blinking_led_color, i / 10))
+            globals.neopixels[rot(blinking_led)] = apply_gamma(scale_color(blinking_led_color, i / 10))
             globals.neopixels.show()
             sleep(0.05)
         for i in range(10, 0, -1):
-            globals.neopixels[blinking_led] = apply_gamma(scale_color(blinking_led_color, i / 10))
+            globals.neopixels[rot(blinking_led)] = apply_gamma(scale_color(blinking_led_color, i / 10))
             globals.neopixels.show()
             sleep(0.05)
-        globals.neopixels[blinking_led] = OFF
+        globals.neopixels[rot(blinking_led)] = OFF
         globals.neopixels.show()
         sleep(0.2)
 
@@ -157,6 +161,7 @@ def white_static(min_value=50, max_value=255):
         r = gamma[clamp(n + dr, 0, 255)]
         g = gamma[clamp(n + dg, 0, 255)]
         b = gamma[clamp(n + db, 0, 255)]
+        # static does not need rotation
         globals.neopixels[i] = (r, g, b)
 
 
@@ -218,6 +223,6 @@ def jump_end_animation(run_while: Callable[[], bool]):
         capacity = globals.capacity_percent
         blinking_led = capacity_blinking_led(capacity)
         for i in range(blinking_led):
-            globals.neopixels[i] = apply_gamma(capacity_led_color(i))
+            globals.neopixels[rot(i)] = apply_gamma(capacity_led_color(i))
             globals.neopixels.show()
             sleep(0.05)

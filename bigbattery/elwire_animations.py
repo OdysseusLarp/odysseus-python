@@ -109,7 +109,7 @@ def play_animation(run_while: Callable[[], bool], animation: list[tuple[int, flo
 
 
 def static_animation(
-    run_while: Callable[[], bool], rand_min: float = 0.1, rand_max: float = 5.0, flash_duration: float = 0.1
+    run_while: Callable[[], bool], rand_min: float = 0.1, rand_max: float = 3.0, flash_duration: float = 0.1
 ):
     while run_while():
         # Delay first then flash
