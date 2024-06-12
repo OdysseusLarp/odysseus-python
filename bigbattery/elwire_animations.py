@@ -141,12 +141,12 @@ def black_animation(run_while: Callable[[], bool]):
         sleep(1)
 
 
-def fade_in_out_animation(run_while: Callable[[], bool], sleep_time: float = 0.1):
+def fade_in_out_animation(run_while: Callable[[], bool], sleep_time: float = 0.1, step: int = 1):
     while run_while():
-        for i in range(0, MAX_LEVEL + 1):
+        for i in range(0, MAX_LEVEL + 1, step):
             globals.elwire.duty_cycle = elwire_levels[i]
             sleep(sleep_time)
-        for i in range(MAX_LEVEL - 1, 0, -1):
+        for i in range(MAX_LEVEL - 1, 0, -step):
             globals.elwire.duty_cycle = elwire_levels[i]
             sleep(sleep_time)
 

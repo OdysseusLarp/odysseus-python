@@ -16,6 +16,11 @@ from bigbattery.consts import (
     NEOPIXEL_INTERNAL_BRIGHTNESS,
     LOCATION_INPUT_PINS,
     LOCATION_ENGINEERING,
+    LOCATION_MEDBAY,
+    LOCATION_SCIENCE,
+    LOCATION_FIGHTER1,
+    LOCATION_FIGHTER2,
+    LOCATION_FIGHTER3,
     JUMP_EXIT_TIME,
 )
 import bigbattery.neopixel_animations as neopixel_animations
@@ -83,6 +88,10 @@ def is_empty() -> bool:
     return globals.capacity_percent <= 0
 
 
+def is_active() -> bool:
+    return globals.is_active
+
+
 def is_disconnected() -> bool:
     return globals.connected_position == 0
 
@@ -95,6 +104,11 @@ def is_connected_and_active_and_charged() -> bool:
     return globals.connected_position != 0 and globals.is_active and has_charge()
 
 
+def is_jumping() -> bool:
+    """Check whether is connected in enginerring room while jumping."""
+    return globals.connected_position == LOCATION_ENGINEERING and globals.is_active
+
+
 ### NEOPIXEL animation logic
 def neopixel_animation_thread():
     """Background thread for running Neopixel animations based on global state."""
@@ -103,7 +117,12 @@ def neopixel_animation_thread():
     neopixel_animations.fade_up_down(delay=0.005, step=3)
 
     while True:
-        if not has_charge():
+        if is_jumping():
+            # Engineering jump view overrides all others
+            print("Neopixel: Engineering jumping")
+            neopixel_animations.jump_static_animation(run_while=is_jumping)
+            neopixel_animations.jump_end_animation(run_while=once())
+        elif not has_charge():
             print("Neopixel: Capacity is zero")
             neopixel_animations.battery_empty_animation(run_while=is_empty)
         elif is_connected_and_inactive_and_charged() or is_disconnected():
@@ -112,14 +131,8 @@ def neopixel_animation_thread():
                 run_while=lambda: is_connected_and_inactive_and_charged() or is_disconnected()
             )
         elif is_connected_and_active_and_charged():
-            if globals.connected_position == LOCATION_ENGINEERING:
-                print("Neopixel: Engineering jumping")
-                neopixel_animations.jump_static_animation(run_while=is_connected_and_active_and_charged)
-                # End animation
-                neopixel_animations.jump_end_animation(run_while=once())
-            else:
-                # TODO: Other active displays
-                neopixel_animations.capacity_display_animation(run_while=is_connected_and_active_and_charged)
+            # TODO: Customize active displays (other than engineering)
+            neopixel_animations.capacity_display_animation(run_while=is_connected_and_active_and_charged)
         else:
             print(f"Neopixel: ERROR unknown state position={globals.connected_position} active={globals.is_active}")
             sleep(1)
@@ -133,7 +146,19 @@ def elwire_animation_thread():
 
     previous_connected = False
     while True:
-        if not has_charge():
+        if is_jumping():
+            # Engineering jump view overrides all others
+            print("elwire: Engineering jumping")
+            elwire_animations.static_animation(
+                run_while=is_connected_and_active_and_charged, rand_min=0.0, rand_max=0.3, flash_duration=0.05
+            )
+            # End animation duration should be approx same as neopixel_animations.jump_end_animation
+            # i.e. JUMP_EXIT_TIME plus ~2s flashing
+            elwire_animations.static_animation(
+                run_while=duration(JUMP_EXIT_TIME), rand_min=0.0, rand_max=0.15, flash_duration=0.05
+            )
+            elwire_animations.fade_in_out_animation(run_while=duration(2), sleep_time=0.02)
+        elif not has_charge():
             print("elwire: Capacity is zero")
             elwire_animations.black_animation(run_while=is_empty)
             previous_connected = False
@@ -150,20 +175,32 @@ def elwire_animation_thread():
             )
             previous_connected = True
         elif is_connected_and_active_and_charged():
-            if globals.connected_position == LOCATION_ENGINEERING:
-                print("elwire: Engineering jumping")
-                elwire_animations.static_animation(
-                    run_while=is_connected_and_active_and_charged, rand_min=0.0, rand_max=0.3, flash_duration=0.05
-                )
-                # End animation duration should be approx same as neopixel_animations.jump_end_animation
-                # i.e. JUMP_EXIT_TIME plus ~2s flashing
-                elwire_animations.static_animation(
-                    run_while=duration(JUMP_EXIT_TIME), rand_min=0.0, rand_max=0.15, flash_duration=0.05
-                )
-                elwire_animations.fade_in_out_animation(run_while=duration(2), sleep_time=0.02)
-            else:
-                # TODO: Other active displays
+            if globals.connected_position == LOCATION_MEDBAY:
+                # Medbbay pulsates actively (short duration)
+                print("elwire: Medbay active")
                 elwire_animations.fade_in_out_animation(run_while=is_connected_and_active_and_charged, sleep_time=0.02)
+            elif (
+                globals.connected_position == LOCATION_FIGHTER1
+                or globals.connected_position == LOCATION_FIGHTER2
+                or globals.connected_position == LOCATION_FIGHTER3
+            ):
+                # Fighter jumpstart pulsates very fast (short duration)
+                print("elwire: Fighter jumpstart active")
+                elwire_animations.fade_in_out_animation(
+                    run_while=is_connected_and_active_and_charged, sleep_time=0.02, step=3
+                )
+            elif globals.connected_position == LOCATION_SCIENCE:
+                # Science room is static noise (relatively long duration)
+                print("elwire: Science active")
+                elwire_animations.static_animation(
+                    run_while=is_connected_and_active_and_charged, rand_min=0.0, rand_max=0.5, flash_duration=0.05
+                )
+            else:
+                # Default active display
+                print("elwire: ERROR unknown active position, using default animation")
+                elwire_animations.connected_animation(
+                    run_while=is_connected_and_active_and_charged, initial_animation=False
+                )
             previous_connected = True
         else:
             print(f"elwire: ERROR unknown state position={globals.connected_position} active={globals.is_active}")
