@@ -7,10 +7,10 @@ rod_control_panel: # The board identifier
     aircore_correction_values:
         0: #index of the board list
             0: # key is number of channel on driver
-              correction: 164
+              correction: -95
               alias: rod_4_2_gauge
             1:
-              correction: 245
+              correction: 230
               alias: rod_5_2_gauge
             3:
               correction: 30
@@ -44,7 +44,7 @@ rod_control_panel: # The board identifier
               correction: 180
               alias: rod_5_3_gauge
             7:
-              correction: 0
+              correction: 55
               alias: rod_0_3_gauge
         2:
             0:
@@ -79,7 +79,7 @@ rod_control_panel: # The board identifier
               correction: 150
               alias: rod_6_4_gauge
             3:
-              correction: 185
+              correction: 75
               alias: rod_4_4_gauge
             4:
               correction: 80
@@ -179,7 +179,7 @@ rod_control_panel: # The board identifier
               pin: 44
               alias: rod_3_6_led
             22:
-              pin: 25
+              pin: 15
               alias: rod_4_0_led
             23:
               pin: 37
