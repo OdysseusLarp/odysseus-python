@@ -1,3 +1,4 @@
 -e git+https://github.com/rambo/arDuBUS#egg=ardubus&subdirectory=python3-ardubus
 -r ../requirements.txt
-pyzmq==18.0.2
+pyzmq==26.0.3
+
