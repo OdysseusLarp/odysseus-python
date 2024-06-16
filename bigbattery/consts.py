@@ -30,4 +30,4 @@ LOCATION_FIGHTER2 = 5
 LOCATION_FIGHTER3 = 6
 
 # Approx time from JumpEnd signal (moving to inactive state) to the coming-out-of-jump climax, seconds
-JUMP_EXIT_TIME = 7
+JUMP_EXIT_TIME = 4
