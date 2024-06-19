@@ -7,6 +7,7 @@ import logging
 import random
 import signal as posixsignal
 import time
+import sys
 
 import ardubus_core
 import ardubus_core.deviceconfig
@@ -746,6 +747,7 @@ class ReactorConsole:
     @log_exceptions
     def ardubus_callback(self, event):
         """Ardubus events callback"""
+        self.logger.debug(f"{event.alias}={event.state}")
         self.loop.create_task(self.ardubus_callback_coro(event))
 
     @log_exceptions
@@ -851,7 +853,10 @@ class ReactorConsole:
 
 if __name__ == '__main__':
     # FIXME: Add ports, paths and loglevel from cli
-    REACTORCONSOLE = ReactorConsole()
+    port = "/dev/ttyUSB0"
+    if len(sys.argv) > 1:
+        port = sys.argv[1]
+    REACTORCONSOLE = ReactorConsole(port)
     # Set debug only for our local logger
     # REACTORCONSOLE.logger.setLevel(logging.DEBUG)
     try:
