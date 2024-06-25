@@ -32,7 +32,7 @@ def logic(state, backend_change):
             if random.random() < state["kick_success_probability"]:
                 print("Fixing box")
                 state["status"] = "fixed"
-            else
+            else:
                 print("Ignoring kick randomly")
         callback.reset_tally()
 
