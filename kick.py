@@ -1,5 +1,6 @@
 from odysseus.taskbox import TaskBoxRunner
 import pigpio
+import random
 
 # Box that detects when a contact is opened or closed and fixes the box in that case.
 # Kicking a metal plate with a contactor on the other side will fix the box.
@@ -8,6 +9,7 @@ CALLS_PER_SECOND = 1.0
 
 default_state = {
     "status": "initial",
+    "kick_success_probability": 0.6,
     "config": {
         "pin": 14,
     },
@@ -27,7 +29,11 @@ def logic(state, backend_change):
     if callback.tally() > 0:
         print("Kicked! tally =", callback.tally())
         if state["status"] != "fixed":
-            state["status"] = "fixed"
+            if random.random() < state["kick_success_probability"]:
+                print("Fixing box")
+                state["status"] = "fixed"
+            else
+                print("Ignoring kick randomly")
         callback.reset_tally()
 
     return state
