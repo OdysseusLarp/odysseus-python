@@ -97,6 +97,8 @@ def logic(state, backend_change):
     value = state["value"] + state["brownNoiseValue"] + rnd + sine
     state["displayValue"] = value
 
+    print("Real value", state["value"])
+
     # display  actual  brown  sine  white-mag
     # print("{:.1f}\t{:.2f}\t{:+.2f}\t{:+.2f}\t{:.2f}".format(value, state["value"], state["brownNoiseValue"], sine, state["rndMagnitude"]))
 
