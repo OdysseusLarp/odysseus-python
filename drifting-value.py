@@ -46,9 +46,10 @@ default_state = {
         "sineMagnitude": 1,  # magnitude of sine wave
         "sineSpeed": 60,  # sine cycle time in seconds
         "driftDelayAfterAdjust": 60,  # number of secs to pause drift after adjustment is done
-        "adjustUpAmount": 0.3,  # amount to adjust up per call (pressure rise)
+        "adjustUpAmount": 1.5,  # amount to adjust up per call (pressure rise)
         "adjustDownAmount": 1,  # amount to adjust down per call (pressure release)
         "probDriftDown": 0.66,  # probability drift will go downwards (otherwise upward)
+        "pressureLimit": 106,  # pressure limit to adjust down
     },
 }
 
@@ -153,11 +154,14 @@ def init():
 
 def getAdjustmentReal(config):
     p = readPressure()
-    if p > 110:
+    # print("Pressure:", p)
+    if p > config["pressureLimit"]:
+        print("Adjusting down, pressure:", p, "limit:", config["pressureLimit"])
         return -config["adjustDownAmount"]
 
-    v = pi.read(SWITCH_GPIO_PIN)
-    if v == 0:
+    v = readSwitchActive()
+    if v:
+        print("Adjusting up")
         return config["adjustUpAmount"]
     return None
 
@@ -172,6 +176,18 @@ def readPressure():
     percentage = (value / 0x3FFF) * 100
     kpa = (percentage - 10) * pressure_range / 80
     return kpa
+
+
+previous_switch_value = None
+
+
+def readSwitchActive():
+    global previous_switch_value
+    v = pi.read(SWITCH_GPIO_PIN)
+    if v != previous_switch_value:
+        previous_switch_value = v
+        return True
+    return False
 
 
 options = {
