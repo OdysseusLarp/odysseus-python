@@ -97,8 +97,6 @@ def logic(state, backend_change):
     value = state["value"] + state["brownNoiseValue"] + rnd + sine
     state["displayValue"] = value
 
-    print("Real value", state["value"])
-
     # display  actual  brown  sine  white-mag
     # print("{:.1f}\t{:.2f}\t{:+.2f}\t{:+.2f}\t{:.2f}".format(value, state["value"], state["brownNoiseValue"], sine, state["rndMagnitude"]))
 
@@ -156,9 +154,9 @@ def init():
 
 def getAdjustmentReal(config):
     p = readPressure()
-    print("Pressure:", p)
+    # print("Pressure:", p)
     if p > config["pressureLimit"]:
-        print("Adjusting down")
+        print("Adjusting down, pressure:", p, "limit:", config["pressureLimit"])
         return -config["adjustDownAmount"]
 
     v = readSwitchActive()
