@@ -5,7 +5,7 @@ import random
 # Box that detects when a contact is opened or closed and fixes the box in that case.
 # Kicking a metal plate with a contactor on the other side will fix the box.
 
-CALLS_PER_SECOND = 1.0
+CALLS_PER_SECOND = 10
 
 default_state = {
     "status": "initial",
