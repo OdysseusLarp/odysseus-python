@@ -34,10 +34,10 @@ import bigbattery.globals as globals
 RUN_INTERVAL = 1.0
 
 default_state = {
-    "capacity_percent": 100,
+    "capacity_percent": 80,
     "connected_position": 0,
     "active": False,
-    "brightness": 20,
+    "brightness": 10,
     "led_rotation": 12,
 }
 
@@ -71,6 +71,7 @@ location_pins = []
 
 def read_position():
     """Read connected position from location pins."""
+    return LOCATION_SCIENCE
     position_value = 0
 
     for i in range(len(location_pins)):
